@@ -1,0 +1,14 @@
+flask
+numpy
+torch
+scikit-learn
+opencv-python
+timm
+Pillow
+albumentations 
+google-genai
+markdown
+opencv-python-headless
+pytorch-gradcam
+grad-cam
+dotenv

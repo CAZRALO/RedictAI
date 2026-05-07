@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redict AI - Chẩn Đoán Bệnh Về Mắt</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo"><h1>👁️ <span>Redict AI</span></h1></div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link active" data-tab="diagnose">Chẩn Đoán AI</a></li>
+                    <li><a href="#" class="nav-link" data-tab="info">Thông Tin Bệnh</a></li>
+                    <li><a href="#" class="nav-link" data-tab="chatbot">Trợ Lý AI</a></li>
+                </ul>
+            </nav>
+        </header>
+        <main>
+            <div id="diagnose" class="tab-content active">
+                <div class="upload-area card">
+                    <h2>Tải Ảnh Lên</h2>
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <label for="imageUpload" class="upload-box" id="uploadBox">
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                            <p>Kéo thả hoặc nhấn để chọn ảnh</p>
+                        </label>
+                        <input type="file" id="imageUpload" name="image" accept="image/png, image/jpeg">
+
+                        <div id="imagePreviewContainer">
+                            <img id="imagePreview" src="#" alt="Ảnh xem trước" />
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button type="button" class="btn" id="diagnoseBtnDeep" disabled>Chẩn Đoán Sâu (Lâu)</button>
+                            <button type="button" class="btn" id="diagnoseBtnFast" disabled>Chẩn Đoán Nhhanh</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="result-area card" id="resultCard" style="display: none;">
+                    <h2>Kết Quả Chẩn Đoán</h2>
+                    <div id="result-display">
+                        <div class="loader" id="loader"></div>
+                        
+                        <div id="prediction-result">
+                            <p>Kết quả sẽ được hiển thị tại đây.</p>
+                        </div>
+                        
+                        <!-- *** CONTAINER ẢNH KẾT QUẢ *** -->
+                        <div id="image-results-container" style="display: none; width: 100%; margin-top: 2rem;">
+                             <!-- Responsive layout: column on mobile, row on desktop -->
+                            <div class="img-result-wrapper">
+                                <div style="flex: 1; text-align: center;">
+                                    <h4 style="color: var(--text-starlight); margin-bottom: 0.5rem;">Ảnh Gốc</h4>
+                                    <img id="originalResultImage" src="" alt="Ảnh gốc của mắt do người dùng tải lên" style="width: 100%; max-width: 350px; border-radius: 8px; border: 1px solid var(--border-color); margin: 0 auto;">
+                                </div>
+                                
+                                <div id="heatmap-column" style="flex: 1; text-align: center;">
+                                    <h4 style="color: var(--text-starlight); margin-bottom: 0.5rem;">Heatmap (LayerCAM)</h4>
+                                    <img id="heatmapResultImage" src="" alt="Heatmap chẩn đoán AI chồng lên ảnh gốc" style="width: 100%; max-width: 350px; border-radius: 8px; border: 1px solid var(--border-color); margin: 0 auto;">
+                                </div>
+                            </div>
+                            
+                            <div id="scoreCamLoader" class="loader loader-small" style="display: none; margin: 1.5rem auto 0 auto;"></div>
+                            <button type="button" class="btn btn-secondary" id="scoreCamBtn" style="display: none; margin-top: 1.5rem; max-width: 300px; margin-left: auto; margin-right: auto;">
+                                Tạo Heatmap chi tiết (ScoreCAM - Chậm)
+                            </button>
+                            <div id="scoreCamError" style="color: var(--vote-red); margin-top: 1rem; display: none;"></div>
+                        </div>
+
+                        <div id="chart-container">
+                            <canvas id="resultChart"></canvas>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="uploadAnotherBtn" style="margin-top: 2rem;">Thử với ảnh khác</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="info" class="tab-content">
+                <div class="card">
+                    <h2>Đục thủy tinh thể (Cataract)</h2>
+                    <div class="disease-info-card">
+                        <div class="disease-image">
+                            <img src="https://www.vinmec.com/static/uploads/20190627_073232_787668_duc_thuy_tinh_the_1_max_1800x1800_jpg_ce7340927f.jpg" alt="Ảnh minh họa Đục thủy tinh thể">
+                        </div>
+                        <div class="disease-content">
+                            <h3>"Thế giới qua một lớp sương mờ"</h3>
+                            <p>Đục thủy tinh thể là tình trạng thủy tinh thể (thấu kính tự nhiên trong mắt) bị mờ đục, khiến ánh sáng khó đi qua, dẫn đến suy giảm thị lực. Đây là nguyên nhân gây mù lòa hàng đầu trên thế giới có thể chữa được.</p>
+                            <h4>Triệu chứng thường gặp</h4>
+                            <ul>
+                                <li>Nhìn mờ, khó khăn khi đọc chữ hoặc nhìn xa.</li>
+                                <li>Nhạy cảm với ánh sáng, nhìn đèn thấy quầng sáng.</li>
+                                <li>Màu sắc bị phai hoặc ngả vàng.</li>
+                                <li>Nhìn một vật thành hai hoặc nhiều hình (nhìn đôi).</li>
+                            </ul>
+                            <h4>Nguyên nhân & Điều trị</h4>
+                            <p>Nguyên nhân chính là do quá trình lão hóa. Các yếu tố nguy cơ khác bao gồm tiểu đường, hút thuốc, tiếp xúc nhiều với tia UV. Điều trị hiệu quả nhất là phẫu thuật Phaco thay thế thủy tinh thể nhân tạo, một thủ thuật nhanh chóng và an toàn.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Bệnh võng mạc tiểu đường</h2>
+                    <div class="disease-info-card">
+                        <div class="disease-image">
+                            <img src="https://www.vinmec.com/static/uploads/20190523_081441_937230_benh_vong_mac_max_1800x1800_jpg_6b83bfc0ae.jpg" alt="Ảnh minh họa Bệnh võng mạc tiểu đường">
+                        </div>
+                        <div class="disease-content">
+                            <h3>"Biến chứng thầm lặng của bệnh tiểu đường"</h3>
+                            <p>Đây là một biến chứng ở mắt của bệnh tiểu đường, xảy ra khi lượng đường trong máu cao làm tổn thương các mạch máu nhỏ ở võng mạc. Đây là nguyên nhân chính gây mù lòa ở người trong độ tuổi lao động.</p>
+                            <h4>Triệu chứng thường gặp</h4>
+                            <ul>
+                                <li>Giai đoạn đầu thường không có triệu chứng.</li>
+                                <li>Nhìn thấy các đốm đen hoặc "ruồi bay" lơ lửng.</li>
+                                <li>Nhìn mờ, thị lực dao động thất thường.</li>
+                                <li>Mất thị lực đột ngột (ở giai đoạn nặng do xuất huyết).</li>
+                            </ul>
+                            <h4>Nguyên nhân & Điều trị</h4>
+                            <p>Nguyên nhân duy nhất là do bệnh tiểu đường không được kiểm soát tốt. Việc kiểm soát chặt chẽ đường huyết, huyết áp và khám mắt định kỳ là cách phòng ngừa tốt nhất. Các phương pháp điều trị bao gồm laser quang đông võng mạc và tiêm thuốc nội nhãn (Anti-VEGF).</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="card">
+                    <h2>Glôcôm (Glaucoma)</h2>
+                    <div class="disease-info-card">
+                        <div class="disease-image">
+                            <img src="https://hikarieyecare.com/wp-content/uploads/Benh-cuom-nuoc-hay-con-goi-la-Glaucoma-la-mot-nhom-benh-ve-mat-gay-ton-thuong-day-than-kinh-thi-gia.png" alt="Ảnh minh họa Glôcôm">
+                        </div>
+                        <div class="disease-content">
+                            <h3>"Kẻ cắp thị lực thầm lặng"</h3>
+                            <p>Glôcôm là một nhóm bệnh gây tổn thương dây thần kinh thị giác không thể phục hồi, thường do áp lực trong mắt (nhãn áp) tăng cao. Bệnh tiến triển âm thầm và gây mất thị trường (vùng nhìn thấy) từ từ.</p>
+                            <h4>Triệu chứng thường gặp</h4>
+                            <ul>
+                                <li>Thường không có triệu chứng ở giai đoạn sớm.</li>
+                                <li>Mất dần tầm nhìn ngoại vi (nhìn đường hầm).</li>
+                                <li>Đau mắt, nhức đầu, nhìn thấy quầng sáng (glôcôm góc đóng cấp tính).</li>
+                                <li>Buồn nôn và ói mửa.</li>
+                            </ul>
+                            <h4>Nguyên nhân & Điều trị</h4>
+                            <p>Nguyên nhân chính xác chưa rõ ràng nhưng liên quan đến việc thoát lưu thủy dịch trong mắt bị cản trở. Yếu tố nguy cơ bao gồm tuổi tác và di truyền. Điều trị nhằm mục đích hạ nhãn áp bằng thuốc nhỏ mắt, laser hoặc phẫu thuật để bảo tồn thị lực còn lại.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chatbot" class="tab-content">
+                <div class="card">
+                    <h2>Trợ lý AI EyeCare</h2>
+                    <div class="chat-body" id="chatBody">
+                        <div class="message-wrapper bot">
+                             <div class="chat-message bot-message">
+                                Chào bạn! Tôi là trợ lý ảo EyeCare. Tôi có thể giúp gì cho bạn về sức khỏe mắt?
+                                <br><br>
+                                <small><b>Lưu ý:</b> Tôi không đưa ra chẩn đoán y khoa. Mọi thông tin chỉ mang tính tham khảo.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-footer">
+                        <!-- ĐÃ XÓA NÚT ĐÍNH KÈM FILE -->
+                        <!-- <label for="chatFileInput" style="cursor: pointer;"> ... </label> -->
+                        <!-- <input type="file" id="chatFileInput" accept="image/*" style="display: none;"> -->
+                        
+                        <input type="text" id="chat-input" placeholder="Nhập câu hỏi hoặc thông tin cần kiểm chứng..." onkeypress="handleChatKeyPress(event)">
+                        <button onclick="sendFactCheckRequest()" title="Kiểm chứng thông tin từ ô nhập">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <button onclick="sendChatMessage()" title="Gửi tin nhắn">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+             <div class="footer-content">
+                <div class="logo"><h1>👁️ <span>Redict AI</span></h1></div>
+                <p class="footer-school">Một dự án của học sinh Trường THPT Chuyên Lê Quý Đôn</p>
+                <div class="creators-section">
+                    <h4 class="creators-heading">Nhóm Phát Triển</h4>
+                    <div class="creators-list">
+                        <span>Đỗ Hoàng Anh Tuấn</span>
+                        <span>Nguyễn Trà Giang</span>
+                        <span>Phùng Nguyễn Như Bách</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                 <p>&copy; 2025 Redict AI. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+    <!-- LIÊN KẾT ĐẾN FILE JS TRONG THƯ MỤC STATIC -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
